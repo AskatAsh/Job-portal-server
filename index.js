@@ -25,7 +25,7 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
-    await client.connect();
+    // await client.connect();
 
     const jobsCollection = client.db("jobPortal").collection("jobs");
     const jobApplicationCollection = client.db("jobPortal").collection("job_applications")
@@ -33,6 +33,7 @@ async function run() {
 
     // jobs related api's
 
+    // get all jobs data
     app.get('/jobs', async (req, res) => {
         const cursor = jobsCollection.find();
         const result = await cursor.toArray();
@@ -51,9 +52,18 @@ async function run() {
     
     // job application api's
 
+    // apply to a job
     app.post('/job-applications', async (req, res) => {
       const application = req.body;
       const result = await jobApplicationCollection.insertOne(application);
+      res.send(result);
+    })
+
+    // get applied jobs of a user
+    app.get('/job-applications', async (req, res) => {
+      const email = req.query.email;
+      const query = {applicant_email: email};
+      const result = await jobApplicationCollection.find(query).toArray();
       res.send(result);
     })
     
