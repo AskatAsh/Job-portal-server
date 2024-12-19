@@ -1,10 +1,9 @@
-require('dotenv').config();
-const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
-const express = require('express');
-const cors = require('cors');
+require("dotenv").config();
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
+const express = require("express");
+const cors = require("cors");
 const port = process.env.PORT || 5000;
 const app = express();
-
 
 app.use(express.json());
 app.use(cors());
@@ -19,7 +18,7 @@ const client = new MongoClient(uri, {
     version: ServerApiVersion.v1,
     strict: true,
     deprecationErrors: true,
-  }
+  },
 });
 
 async function run() {
@@ -28,65 +27,78 @@ async function run() {
     // await client.connect();
 
     const jobsCollection = client.db("jobPortal").collection("jobs");
-    const jobApplicationCollection = client.db("jobPortal").collection("job_applications")
+    const jobApplicationCollection = client
+      .db("jobPortal")
+      .collection("job_applications");
 
-
-    // jobs related api's
+    // jobs related api's ====================================
 
     // get all jobs data
-    app.get('/jobs', async (req, res) => {
-        const cursor = jobsCollection.find();
-        const result = await cursor.toArray();
-        res.send(result);
-    })
+    app.get("/jobs", async (req, res) => {
+      const cursor = jobsCollection.find();
+      const result = await cursor.toArray();
+      res.send(result);
+    });
 
     // get job details
-    app.get('/jobDetails/:id', async (req, res) => {
-        const id = req.params.id;
-        const query = {_id: new ObjectId(id)};
-        const result = await jobsCollection.findOne(query);
-        res.send(result);
-    })
+    app.get("/jobDetails/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await jobsCollection.findOne(query);
+      res.send(result);
+    });
 
     // ===========================X============================
-    
-    // job application api's
+
+    // job application api's ==================================
 
     // apply to a job
-    app.post('/job-applications', async (req, res) => {
+    app.post("/job-applications", async (req, res) => {
       const application = req.body;
       const result = await jobApplicationCollection.insertOne(application);
       res.send(result);
-    })
+    });
 
     // get applied jobs of a user
-    app.get('/job-applications', async (req, res) => {
+    app.get("/job-applications", async (req, res) => {
       const email = req.query.email;
-      const query = {applicant_email: email};
+      const query = { applicant_email: email };
       const result = await jobApplicationCollection.find(query).toArray();
 
       // alternative way to aggregate data
-      for(const application of result){
-        const jobQuery = {_id: new ObjectId(application.job_id)};
+      for (const application of result) {
+        const jobQuery = { _id: new ObjectId(application.job_id) };
         const job = await jobsCollection.findOne(jobQuery);
-        if(job){
-          application.title = job.title
-          application.company_logo = job.company_logo
-          application.company = job.company
-          application.status = job.status
-          application.location = job.location
-          application.deadline = job.applicationDeadline
+        if (job) {
+          application.title = job.title;
+          application.company_logo = job.company_logo;
+          application.company = job.company;
+          application.status = job.status;
+          application.location = job.location;
+          application.deadline = job.applicationDeadline;
         }
       }
 
       res.send(result);
-    })
+    });
+
+    // ===========================X============================
+    
+    // job posting api's ======================================
+    
+    app.post("/jobs", async (req, res) => {
+      const jobData = req.body;
+      const result = await jobsCollection.insertOne(jobData);
+      res.send(result);
+    });
     
     // ===========================X============================
 
     // Send a ping to confirm a successful connection
     // await client.db("admin").command({ ping: 1 });
-    console.log("Pinged your deployment. You successfully connected to MongoDB!");
+    console.log(
+      "Pinged your deployment. You successfully connected to MongoDB!"
+    );
   } finally {
     // Ensures that the client will close when you finish/error
     // await client.close();
@@ -96,10 +108,10 @@ run().catch(console.dir);
 
 // ==============x=================
 
-app.get('/', (req, res) => {
-    res.send("Job Portal Server is Running...");
-})
+app.get("/", (req, res) => {
+  res.send("Job Portal Server is Running...");
+});
 
 app.listen(port, () => {
-    console.log("Server is running at port: ", port);
-})
+  console.log("Server is running at port: ", port);
+});
