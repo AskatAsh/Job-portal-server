@@ -61,6 +61,24 @@ async function run() {
     app.post("/job-applications", async (req, res) => {
       const application = req.body;
       const result = await jobApplicationCollection.insertOne(application);
+
+      // the codes below counts applicant count applied in a job
+      const query = {_id: new ObjectId(application.job_id)};
+      const job = await jobsCollection.findOne(query);
+      let newCount = 0;
+      if(job.applicationCount){
+        newCount = job.applicationCount + 1;
+      }else{
+        newCount = 1;
+      }
+      const updateCount = {
+        $set: {
+          applicationCount: newCount
+        }
+      }
+      const updateResult = await jobsCollection.updateOne(query, updateCount);
+      // ==========================X=============================
+
       res.send(result);
     });
 
