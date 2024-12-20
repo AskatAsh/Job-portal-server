@@ -37,8 +37,8 @@ async function run() {
     app.get("/jobs", async (req, res) => {
       const email = req.query.email;
       let query = {};
-      if(email){
-        query = {hr_email: email};
+      if (email) {
+        query = { hr_email: email };
       }
       const cursor = jobsCollection.find(query);
       const result = await cursor.toArray();
@@ -63,19 +63,19 @@ async function run() {
       const result = await jobApplicationCollection.insertOne(application);
 
       // the codes below counts applicant count applied in a job
-      const query = {_id: new ObjectId(application.job_id)};
+      const query = { _id: new ObjectId(application.job_id) };
       const job = await jobsCollection.findOne(query);
       let newCount = 0;
-      if(job.applicationCount){
+      if (job.applicationCount) {
         newCount = job.applicationCount + 1;
-      }else{
+      } else {
         newCount = 1;
       }
       const updateCount = {
         $set: {
-          applicationCount: newCount
-        }
-      }
+          applicationCount: newCount,
+        },
+      };
       const updateResult = await jobsCollection.updateOne(query, updateCount);
       // ==========================X=============================
 
@@ -105,16 +105,24 @@ async function run() {
       res.send(result);
     });
 
+    // get applicants of a job
+    app.get("/job-applications/jobs/:job_id", async (req, res) => {
+      const id = req.params.job_id;
+      const query = { job_id: id };
+      const result = await jobApplicationCollection.find(query).toArray();
+      res.send(result);
+    });
+
     // ===========================X============================
-    
+
     // job posting api's ======================================
-    
+
     app.post("/jobs", async (req, res) => {
       const jobData = req.body;
       const result = await jobsCollection.insertOne(jobData);
       res.send(result);
     });
-    
+
     // ===========================X============================
 
     // Send a ping to confirm a successful connection
