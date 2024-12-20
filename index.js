@@ -113,6 +113,20 @@ async function run() {
       res.send(result);
     });
 
+    // applicaions status update
+    app.patch("/job-applications/:id", async (req, res) => {
+      const id = req.params.id;
+      const data = req.body;
+      const filter = {_id: new ObjectId(id)};
+      const updateStatus = {
+        $set: {
+          status: data.status
+        }
+      }
+      const result = await jobApplicationCollection.updateOne(filter, updateStatus);
+      res.send(result);
+    })
+
     // ===========================X============================
 
     // job posting api's ======================================
