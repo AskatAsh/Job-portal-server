@@ -1,14 +1,20 @@
 require("dotenv").config();
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const jwt = require("jsonwebtoken");
+const cookieParser = require("cookie-parser");
 const express = require("express");
 const cors = require("cors");
 const port = process.env.PORT || 5000;
 const app = express();
 
+app.use(cookieParser());
 app.use(express.json());
-app.use(cors());
-
+app.use(
+  cors({
+    origin: ["http://localhost:5173", process.env.CLIENT],
+    credentials: true,
+  })
+);
 // mongoDB database connection code
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.fisbs9h.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
@@ -37,8 +43,14 @@ async function run() {
     // auth related api's
     app.post("/jwt", (req, res) => {
       const user = req.body;
-      const token = jwt.sign(user, "secret", { expiresIn: "1h" });
-      res.send(token);
+      const token = jwt.sign(user, process.env.JWT_SECRET, { expiresIn: "1h" });
+      res
+        .cookie("jwtToken", token, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
+        })
+        .send({ success: true });
     });
     // ==========X=========
 
@@ -98,6 +110,9 @@ async function run() {
       const email = req.query.email;
       const query = { applicant_email: email };
       const result = await jobApplicationCollection.find(query).toArray();
+
+      // get cookies
+      console.log("Cookies: ", req.cookies);
 
       // alternative way to aggregate data
       for (const application of result) {
