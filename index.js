@@ -1,5 +1,6 @@
 require("dotenv").config();
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
+const jwt = require("jsonwebtoken");
 const express = require("express");
 const cors = require("cors");
 const port = process.env.PORT || 5000;
@@ -26,10 +27,20 @@ async function run() {
     // Connect the client to the server	(optional starting in v4.7)
     // await client.connect();
 
+    // database collections
     const jobsCollection = client.db("jobPortal").collection("jobs");
     const jobApplicationCollection = client
       .db("jobPortal")
       .collection("job_applications");
+    // ==========X=========
+
+    // auth related api's
+    app.post("/jwt", (req, res) => {
+      const user = req.body;
+      const token = jwt.sign(user, "secret", { expiresIn: "1h" });
+      res.send(token);
+    });
+    // ==========X=========
 
     // jobs related api's ====================================
 
@@ -117,15 +128,18 @@ async function run() {
     app.patch("/job-applications/:id", async (req, res) => {
       const id = req.params.id;
       const data = req.body;
-      const filter = {_id: new ObjectId(id)};
+      const filter = { _id: new ObjectId(id) };
       const updateStatus = {
         $set: {
-          status: data.status
-        }
-      }
-      const result = await jobApplicationCollection.updateOne(filter, updateStatus);
+          status: data.status,
+        },
+      };
+      const result = await jobApplicationCollection.updateOne(
+        filter,
+        updateStatus
+      );
       res.send(result);
-    })
+    });
 
     // ===========================X============================
 
