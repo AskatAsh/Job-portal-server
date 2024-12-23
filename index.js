@@ -11,7 +11,7 @@ app.use(cookieParser());
 app.use(express.json());
 app.use(
   cors({
-    origin: ["http://localhost:5173", process.env.CLIENT, process.env.PRODUCTION],
+    origin: ["http://localhost:5173", "https://jobhub-79a5f.web.app", "https://jobhub-79a5f.firebaseapp.com"],
     credentials: true,
   })
 );
