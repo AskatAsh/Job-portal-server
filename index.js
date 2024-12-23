@@ -1,5 +1,5 @@
 require("dotenv").config();
-const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId, MaxKey } = require("mongodb");
 const jwt = require("jsonwebtoken");
 const cookieParser = require("cookie-parser");
 const express = require("express");
@@ -15,6 +15,26 @@ app.use(
     credentials: true,
   })
 );
+
+const logger = (req, res, next) => {
+  console.log("inside the logger...");
+  next();
+};
+
+const verifyToken = (req, res, next) => {
+  const email = req.query.email;
+  const token = req?.cookies?.jwtToken;
+  if (!token) {
+    return res.status(401).send({ message: "UnAuthorized Access." });
+  }
+  jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
+    if (err) {
+      return res.status(401).send({ message: "UnAuthorized Access" });
+    }
+    req.user = decoded;
+    next();
+  });
+};
 // mongoDB database connection code
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.fisbs9h.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
@@ -40,16 +60,25 @@ async function run() {
       .collection("job_applications");
     // ==========X=========
 
+    const cookieOptions = {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
+    };
+
     // auth related api's
     app.post("/jwt", (req, res) => {
       const user = req.body;
-      const token = jwt.sign(user, process.env.JWT_SECRET, { expiresIn: "1h" });
+      const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
+        expiresIn: "5h",
+      });
+      res.cookie("jwtToken", token, cookieOptions).send({ success: true });
+    });
+
+    app.post("/logout", (req, res) => {
+      // console.log("User Logged Out");
       res
-        .cookie("jwtToken", token, {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === "production",
-          sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
-        })
+        .clearCookie("jwtToken", { ...cookieOptions, maxAge: 0 })
         .send({ success: true });
     });
     // ==========X=========
@@ -106,13 +135,15 @@ async function run() {
     });
 
     // get applied jobs of a user
-    app.get("/job-applications", async (req, res) => {
+    app.get("/job-applications", verifyToken, async (req, res) => {
       const email = req.query.email;
       const query = { applicant_email: email };
-      const result = await jobApplicationCollection.find(query).toArray();
 
-      // get cookies
-      console.log("Cookies: ", req.cookies);
+      if (req.user?.email !== email) {
+        return res.status(403).send({ message: "Forbidden Access" });
+      }
+
+      const result = await jobApplicationCollection.find(query).toArray();
 
       // alternative way to aggregate data
       for (const application of result) {
