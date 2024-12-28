@@ -22,7 +22,7 @@ const logger = (req, res, next) => {
 };
 
 const verifyToken = (req, res, next) => {
-  const email = req.query.email;
+  // const email = req.query.email;
   const token = req?.cookies?.jwtToken;
   if (!token) {
     return res.status(401).send({ message: "UnAuthorized Access." });
@@ -85,15 +85,27 @@ async function run() {
 
     // jobs related api's ====================================
 
-    // get all jobs data
+    // get all jobs data and posted jobs data with email
     app.get("/jobs", async (req, res) => {
       const email = req.query.email;
+      const limit = parseInt(req.query.limit) || 0;
+      const sortBy = req.query.sortBy;
+      console.log(sortBy);
+      let sortQuery = {};
+      if(sortBy === "low2high"){
+        sortQuery = {"salaryRange.min": 1};
+      }else if(sortBy === "high2low"){
+        sortQuery = {"salaryRange.min": -1};
+      }else{
+        sortQuery = {};
+      }
+      
       let query = {};
       if (email) {
         query = { hr_email: email };
       }
-      const cursor = jobsCollection.find(query);
-      const result = await cursor.toArray();
+      
+      const result = (await jobsCollection.find(query).sort(sortQuery).limit(limit).toArray());
       res.send(result);
     });
 
