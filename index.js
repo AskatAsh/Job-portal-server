@@ -91,10 +91,12 @@ async function run() {
 
     // get all jobs data and posted jobs data with email
     app.get("/jobs", async (req, res) => {
-      const email = req.query.email;
-      const limit = parseInt(req.query.limit) || 0;
-      const sortBy = req.query.sortBy;
-      const searchKey = req.query.searchKey;
+      const email = req.query?.email;
+      const limit = parseInt(req.query?.limit) || 0;
+      const sortBy = req.query?.sortBy;
+      const searchKey = req.query?.searchKey;
+      const minSalary = req.query?.min;
+      const maxSalary = req.query?.max;
 
       let sortQuery = {};
       if (sortBy === "low2high") {
@@ -120,7 +122,15 @@ async function run() {
           ],
         };
       }
-      console.log(query);
+      console.log(minSalary, maxSalary);
+
+      if (minSalary && maxSalary) {
+        query = {
+          ...query,
+          "salaryRange.min": { $gte: parseInt(minSalary) },
+          "salaryRange.max": { $lte: parseInt(maxSalary) },
+        };
+      }
       const result = await jobsCollection
         .find(query)
         .sort(sortQuery)
