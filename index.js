@@ -11,7 +11,11 @@ app.use(cookieParser());
 app.use(express.json());
 app.use(
   cors({
-    origin: ["http://localhost:5173", "https://jobhub-79a5f.web.app", "https://jobhub-79a5f.firebaseapp.com"],
+    origin: [
+      "http://localhost:5173",
+      "https://jobhub-79a5f.web.app",
+      "https://jobhub-79a5f.firebaseapp.com",
+    ],
     credentials: true,
   })
 );
@@ -90,22 +94,38 @@ async function run() {
       const email = req.query.email;
       const limit = parseInt(req.query.limit) || 0;
       const sortBy = req.query.sortBy;
-      console.log(sortBy);
+      const searchKey = req.query.searchKey;
+
       let sortQuery = {};
-      if(sortBy === "low2high"){
-        sortQuery = {"salaryRange.min": 1};
-      }else if(sortBy === "high2low"){
-        sortQuery = {"salaryRange.min": -1};
-      }else{
+      if (sortBy === "low2high") {
+        sortQuery = { "salaryRange.min": 1 };
+      } else if (sortBy === "high2low") {
+        sortQuery = { "salaryRange.min": -1 };
+      } else {
         sortQuery = {};
       }
-      
+
       let query = {};
       if (email) {
         query = { hr_email: email };
       }
-      
-      const result = (await jobsCollection.find(query).sort(sortQuery).limit(limit).toArray());
+
+      if (searchKey) {
+        query = {
+          $or: [
+            { title: { $regex: searchKey, $options: "i" } },
+            { category: { $regex: searchKey, $options: "i" } },
+            { location: { $regex: searchKey, $options: "i" } },
+            { company: { $regex: searchKey, $options: "i" } },
+          ],
+        };
+      }
+      console.log(query);
+      const result = await jobsCollection
+        .find(query)
+        .sort(sortQuery)
+        .limit(limit)
+        .toArray();
       res.send(result);
     });
 
